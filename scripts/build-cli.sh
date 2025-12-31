@@ -38,6 +38,9 @@ case "$ARCH" in
     arm64)
         ARCH="arm64"
         ;;
+    loongarch64)
+        ARCH="loong64"
+        ;;
 esac
 
 # Build for current platform only

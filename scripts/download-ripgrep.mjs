@@ -44,6 +44,18 @@ const PLATFORMS = [
 		isZip: false,
 	},
 	{
+		name: "linux-loong64",
+		// Note: ripgrep does not provide official LoongArch binaries
+		// Users on LoongArch systems will need to compile ripgrep from source
+		// or use a community-provided build. This entry is included for completeness
+		// and will be skipped during download if the binary doesn't exist.
+		archiveName: null,
+		url: null,
+		binaryPath: "rg",
+		isZip: false,
+		optional: true, // Mark as optional to skip if not available
+	},
+	{
 		name: "win-x64",
 		archiveName: `ripgrep-${RIPGREP_VERSION}-x86_64-pc-windows-msvc.zip`,
 		url: `https://github.com/BurntSushi/ripgrep/releases/download/${RIPGREP_VERSION}/ripgrep-${RIPGREP_VERSION}-x86_64-pc-windows-msvc.zip`,
@@ -156,6 +168,13 @@ async function extractZip(zipPath, destDir) {
  */
 async function downloadRipgrepForPlatform(platform) {
 	console.log(`\n📦 Processing ${platform.name}...`)
+
+	// Skip optional platforms that don't have binaries available
+	if (platform.optional && (!platform.url || !platform.archiveName)) {
+		console.log(`  ⚠ Skipped (no official binary available)`)
+		console.log(`  ℹ Users on ${platform.name} will need to provide their own ripgrep binary`)
+		return true
+	}
 
 	const platformDir = path.join(OUTPUT_DIR, platform.name)
 	const archivePath = path.join(OUTPUT_DIR, platform.archiveName)
