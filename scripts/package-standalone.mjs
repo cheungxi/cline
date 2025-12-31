@@ -24,6 +24,7 @@ const TARGET_PLATFORMS = [
 	{ platform: "darwin", arch: "x64", targetDir: "darwin-x64" },
 	{ platform: "darwin", arch: "arm64", targetDir: "darwin-arm64" },
 	{ platform: "linux", arch: "x64", targetDir: "linux-x64" },
+	{ platform: "linux", arch: "loong64", targetDir: "linux-loong64" },
 ]
 const SUPPORTED_BINARY_MODULES = ["better-sqlite3"]
 
@@ -45,6 +46,9 @@ function getCurrentPlatform() {
 	if (platform === "darwin") {
 		return arch === "arm64" ? "darwin-arm64" : "darwin-x64"
 	} else if (platform === "linux") {
+		if (arch === "loong64") {
+			return "linux-loong64"
+		}
 		return "linux-x64"
 	} else if (platform === "win32") {
 		return "win-x64"
@@ -116,6 +120,7 @@ async function copyCliBinaries() {
 		{ os: "darwin", arch: "amd64" },
 		{ os: "linux", arch: "amd64" },
 		{ os: "linux", arch: "arm64" },
+		{ os: "linux", arch: "loong64" },
 	]
 
 	const binDir = path.join(BUILD_DIR, "bin")
@@ -201,6 +206,27 @@ async function copyRipgrepBinary() {
 	const ripgrepBinaryDest = path.join(BUILD_DIR, binaryName)
 
 	console.log(`Copying ripgrep binary for ${currentPlatform}...`)
+
+	// Special handling for LoongArch - ripgrep doesn't provide official binaries
+	if (currentPlatform === "linux-loong64") {
+		console.log(`⚠ Warning: No official ripgrep binary for LoongArch`)
+		console.log(`ℹ Users must compile ripgrep from source or use a community build`)
+		console.log(`ℹ Place the 'rg' binary in the dist-standalone directory manually`)
+		
+		// Check if user has provided a custom ripgrep binary
+		const customRipgrepPath = path.join(process.cwd(), "rg")
+		if (fs.existsSync(customRipgrepPath)) {
+			console.log(`✓ Found custom ripgrep binary at ${customRipgrepPath}`)
+			await cpr(customRipgrepPath, ripgrepBinaryDest)
+			fs.chmodSync(ripgrepBinaryDest, 0o755)
+			console.log(`✓ Custom ripgrep binary copied`)
+			return
+		}
+		
+		// Create a placeholder to indicate ripgrep is needed
+		console.log(`⚠ Skipping ripgrep copy - binary must be provided manually`)
+		return
+	}
 
 	// Check if ripgrep binaries exist, download if missing
 	if (!fs.existsSync(ripgrepBinarySource)) {
